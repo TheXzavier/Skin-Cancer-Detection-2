@@ -6,52 +6,50 @@ def download_file_from_google_drive(file_id, destination):
     """
     Download a file from Google Drive using its file ID
     """
-    if os.path.exists(destination):
-        print(f"Model file already exists at {destination}")
-        return
-    
-    print(f"Downloading model file to {destination}...")
-    os.makedirs(os.path.dirname(destination), exist_ok=True)
-    
-    # Google Drive API URL
+    def get_confirm_token(response):
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                return value
+        return None
+
     URL = "https://docs.google.com/uc?export=download"
     
-    # Start session to handle cookies
     session = requests.Session()
     
-    # Make initial request
+    # First request to get the confirmation token
     response = session.get(URL, params={'id': file_id}, stream=True)
-    
-    # Check if the file is large and requires confirmation
-    token = None
-    for key, value in response.cookies.items():
-        if key.startswith('download_warning'):
-            token = value
-            break
+    token = get_confirm_token(response)
     
     if token:
         params = {'id': file_id, 'confirm': token}
-        response = session.get(URL, params=params, stream=True)
+    else:
+        params = {'id': file_id}
+        
+    # Add special headers to mimic browser behavior
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
     
-    # Get file size if available
-    total_size = int(response.headers.get('content-length', 0))
+    # Second request with confirmation token
+    response = session.get(URL, params=params, headers=headers, stream=True)
     
-    # Create a progress bar using streamlit
-    import streamlit as st
+    # Create progress bar
     progress_bar = st.progress(0)
-    current_size = 0
+    total_size = int(response.headers.get('content-length', 0))
+    block_size = 32768  # 32 KB
+    written = 0
     
-    with open(destination, 'wb') as file:
-        for data in response.iter_content(1024):  # 1KB chunks
-            size = file.write(data)
-            current_size += size
+    os.makedirs(os.path.dirname(destination), exist_ok=True)
+    with open(destination, 'wb') as f:
+        for data in response.iter_content(block_size):
+            written += len(data)
+            f.write(data)
             if total_size:
-                # Update progress bar
-                progress = min(current_size / total_size, 1.0)
+                progress = min(written / total_size, 1.0)
                 progress_bar.progress(progress)
     
     progress_bar.empty()
-    print("Download complete!")
+    return destination
 
 def extract_file_id(drive_link):
     """
