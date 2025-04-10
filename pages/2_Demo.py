@@ -25,7 +25,8 @@ def standardize_reduction_wrapper(fn):
 
 @st.cache_resource
 def load_model():
-    model_path = "./model/model.h5"
+    # Use absolute path for better reliability
+    model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "model", "model.h5")
     
     # Check if model exists, if not download it
     if not os.path.exists(model_path):
@@ -48,26 +49,39 @@ def load_model():
                 st.error("Failed to download the model file.")
                 st.stop()
             
-            if os.path.getsize(model_path) < 1000:  # Check if file is too small (likely an error)
+            # Check file size (model should be around 168MB)
+            file_size = os.path.getsize(model_path)
+            if file_size < 100_000_000:  # Less than 100MB
                 os.remove(model_path)
-                st.error("Downloaded file appears to be invalid. Please try again.")
+                st.error(f"Downloaded file is too small ({file_size} bytes). Expected ~168MB.")
                 st.stop()
                 
             st.success("Model downloaded successfully!")
         except Exception as e:
+            if os.path.exists(model_path):
+                os.remove(model_path)
             st.error(f"Error downloading model: {str(e)}")
             st.stop()
     
     try:
+        # Try to verify if file is a valid HDF5 file
+        import h5py
+        try:
+            with h5py.File(model_path, 'r') as _:
+                pass
+        except Exception as e:
+            st.error("Invalid model file format. Attempting to redownload...")
+            os.remove(model_path)
+            st.rerun()
+        
         # Load the model
         model = tf.keras.models.load_model(model_path)
         return model
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
-        # If model file is corrupted, delete it so it can be downloaded again
         if os.path.exists(model_path):
             os.remove(model_path)
-        st.stop()
+        st.rerun()
 
 
 st.title("Skin-Cancer-Prediction")
