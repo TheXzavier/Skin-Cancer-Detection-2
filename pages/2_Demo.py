@@ -29,21 +29,16 @@ def load_model():
     
     if not os.path.exists(model_path):
         try:
-            st.info("Model file not found. Downloading model...")
-            os.makedirs(os.path.dirname(model_path), exist_ok=True)
-            
-            from huggingface_hub import hf_hub_download
-            
-            # Download from Hugging Face
-            with st.spinner("Downloading model from Hugging Face..."):
+            with st.spinner("Downloading model (this may take a few minutes)..."):
+                os.makedirs(os.path.dirname(model_path), exist_ok=True)
+                from huggingface_hub import hf_hub_download
+                
                 hf_hub_download(
-                    repo_id="TheXzavier/Skin-Cancer-Detection",  # This is your exact repository ID
+                    repo_id="TheXzavier/Skin-Cancer-Detection",
                     filename="model.h5",
                     local_dir=os.path.dirname(model_path),
                     local_dir_use_symlinks=False
                 )
-            
-            st.success("Model downloaded successfully!")
         except Exception as e:
             if os.path.exists(model_path):
                 os.remove(model_path)
@@ -51,21 +46,9 @@ def load_model():
             st.stop()
     
     try:
-        # Try to verify if file is a valid HDF5 file
-        import h5py
-        try:
-            with h5py.File(model_path, 'r') as _:
-                pass
-        except Exception as e:
-            st.error("Invalid model file format. Attempting to redownload...")
-            os.remove(model_path)
-            st.rerun()
-        
-        # Load the model
         model = tf.keras.models.load_model(model_path)
         return model
     except Exception as e:
-        st.error(f"Error loading model: {str(e)}")
         if os.path.exists(model_path):
             os.remove(model_path)
         st.rerun()
