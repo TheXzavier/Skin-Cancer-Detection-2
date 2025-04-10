@@ -1,0 +1,4 @@
+streamlit
+streamlit-lottie
+geopy
+tensorflow==2.12
