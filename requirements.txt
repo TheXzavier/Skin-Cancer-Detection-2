@@ -4,3 +4,4 @@ pillow
 requests
 geopy
 streamlit-lottie
+h5py

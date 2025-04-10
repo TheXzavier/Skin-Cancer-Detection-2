@@ -29,23 +29,45 @@ def load_model():
     
     # Check if model exists, if not download it
     if not os.path.exists(model_path):
-        st.info("Model file not found. Downloading model...")
-        os.makedirs(os.path.dirname(model_path), exist_ok=True)
-        
-        # Google Drive link for the model
-        drive_link = "https://drive.google.com/file/d/1d_zmXyypxBe7h5rh07IXgjxgpwMRzeyu/view?usp=sharing"
-        file_id = extract_file_id(drive_link)
-        
-        if not file_id:
-            st.error("Invalid Google Drive link. Please check the URL.")
+        try:
+            st.info("Model file not found. Downloading model...")
+            os.makedirs(os.path.dirname(model_path), exist_ok=True)
+            
+            # Google Drive link for the model
+            drive_link = "https://drive.google.com/file/d/1d_zmXyypxBe7h5rh07IXgjxgpwMRzeyu/view?usp=sharing"
+            file_id = extract_file_id(drive_link)
+            
+            if not file_id:
+                st.error("Invalid Google Drive link. Please check the URL.")
+                st.stop()
+            
+            download_file_from_google_drive(file_id, model_path)
+            
+            # Verify the file was downloaded
+            if not os.path.exists(model_path):
+                st.error("Failed to download the model file.")
+                st.stop()
+            
+            if os.path.getsize(model_path) < 1000:  # Check if file is too small (likely an error)
+                os.remove(model_path)
+                st.error("Downloaded file appears to be invalid. Please try again.")
+                st.stop()
+                
+            st.success("Model downloaded successfully!")
+        except Exception as e:
+            st.error(f"Error downloading model: {str(e)}")
             st.stop()
-        
-        download_file_from_google_drive(file_id, model_path)
-        st.success("Model downloaded successfully!")
     
-    # Load the model
-    model = tf.keras.models.load_model(model_path)
-    return model
+    try:
+        # Load the model
+        model = tf.keras.models.load_model(model_path)
+        return model
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
+        # If model file is corrupted, delete it so it can be downloaded again
+        if os.path.exists(model_path):
+            os.remove(model_path)
+        st.stop()
 
 
 st.title("Skin-Cancer-Prediction")
