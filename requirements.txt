@@ -1,4 +1,6 @@
 streamlit
-streamlit-lottie
+tensorflow
+pillow
+requests
 geopy
-tensorflow==2.12
+streamlit-lottie

@@ -1,6 +1,5 @@
 import os
 import requests
-from tqdm import tqdm
 import re
 
 def download_file_from_google_drive(file_id, destination):
@@ -36,19 +35,22 @@ def download_file_from_google_drive(file_id, destination):
     
     # Get file size if available
     total_size = int(response.headers.get('content-length', 0))
-    block_size = 1024  # 1 Kibibyte
     
-    with open(destination, 'wb') as file, tqdm(
-            desc=os.path.basename(destination),
-            total=total_size,
-            unit='iB',
-            unit_scale=True,
-            unit_divisor=1024,
-        ) as bar:
-        for data in response.iter_content(block_size):
+    # Create a progress bar using streamlit
+    import streamlit as st
+    progress_bar = st.progress(0)
+    current_size = 0
+    
+    with open(destination, 'wb') as file:
+        for data in response.iter_content(1024):  # 1KB chunks
             size = file.write(data)
-            bar.update(size)
+            current_size += size
+            if total_size:
+                # Update progress bar
+                progress = min(current_size / total_size, 1.0)
+                progress_bar.progress(progress)
     
+    progress_bar.empty()
     print("Download complete!")
 
 def extract_file_id(drive_link):
