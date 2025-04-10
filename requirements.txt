@@ -5,3 +5,4 @@ requests
 geopy
 streamlit-lottie
 h5py
+huggingface-hub>=0.16.4
