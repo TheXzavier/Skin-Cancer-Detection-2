@@ -42,7 +42,14 @@ def load_model():
                 st.error("Invalid Google Drive link. Please check the URL.")
                 st.stop()
             
-            download_file_from_google_drive(file_id, model_path)
+            # Create progress bar
+            progress_bar = st.progress(0)
+            download_file_from_google_drive(
+                file_id, 
+                model_path,
+                progress_callback=progress_bar.progress
+            )
+            progress_bar.empty()
             
             # Verify the file was downloaded
             if not os.path.exists(model_path):

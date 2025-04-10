@@ -2,7 +2,7 @@ import os
 import requests
 import re
 
-def download_file_from_google_drive(file_id, destination):
+def download_file_from_google_drive(file_id, destination, progress_callback=None):
     """
     Download a file from Google Drive using its file ID
     """
@@ -15,8 +15,6 @@ def download_file_from_google_drive(file_id, destination):
     URL = "https://docs.google.com/uc?export=download"
     
     session = requests.Session()
-    
-    # First request to get the confirmation token
     response = session.get(URL, params={'id': file_id}, stream=True)
     token = get_confirm_token(response)
     
@@ -25,18 +23,13 @@ def download_file_from_google_drive(file_id, destination):
     else:
         params = {'id': file_id}
         
-    # Add special headers to mimic browser behavior
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
     
-    # Second request with confirmation token
     response = session.get(URL, params=params, headers=headers, stream=True)
-    
-    # Create progress bar
-    progress_bar = st.progress(0)
     total_size = int(response.headers.get('content-length', 0))
-    block_size = 32768  # 32 KB
+    block_size = 32768
     written = 0
     
     os.makedirs(os.path.dirname(destination), exist_ok=True)
@@ -44,11 +37,10 @@ def download_file_from_google_drive(file_id, destination):
         for data in response.iter_content(block_size):
             written += len(data)
             f.write(data)
-            if total_size:
+            if total_size and progress_callback:
                 progress = min(written / total_size, 1.0)
-                progress_bar.progress(progress)
+                progress_callback(progress)
     
-    progress_bar.empty()
     return destination
 
 def extract_file_id(drive_link):
