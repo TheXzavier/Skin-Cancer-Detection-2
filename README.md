@@ -13,7 +13,7 @@ pip install requests tqdm
 python download_model.py
 ```
 
-[Live Site](https://group-g20-skin-cancer-detection.streamlit.app/)
+[Live Site](https://group-g20-skin-cancer-detection2.streamlit.app/)
 
 ## Running
 
