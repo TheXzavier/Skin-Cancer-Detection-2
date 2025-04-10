@@ -1,6 +1,12 @@
 import PIL
 import streamlit as st
 import tensorflow as tf
+import os
+import sys
+
+# Add the root directory to the path to import the download_model module
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from download_model import download_file_from_google_drive, extract_file_id
 
 st.set_page_config(
     page_title="Skin-Cancer",
@@ -19,10 +25,26 @@ def standardize_reduction_wrapper(fn):
 
 @st.cache_resource
 def load_model():
-    # custom_objects = {
-    #     'LossFunctionWrapper': standardize_reduction_wrapper(tf.keras.losses.LossFunctionWrapper)
-    # }
-    model = tf.keras.models.load_model("./model/model.h5")
+    model_path = "./model/model.h5"
+    
+    # Check if model exists, if not download it
+    if not os.path.exists(model_path):
+        st.info("Model file not found. Downloading model...")
+        os.makedirs(os.path.dirname(model_path), exist_ok=True)
+        
+        # Google Drive link for the model
+        drive_link = "https://drive.google.com/file/d/1d_zmXyypxBe7h5rh07IXgjxgpwMRzeyu/view?usp=sharing"
+        file_id = extract_file_id(drive_link)
+        
+        if not file_id:
+            st.error("Invalid Google Drive link. Please check the URL.")
+            st.stop()
+        
+        download_file_from_google_drive(file_id, model_path)
+        st.success("Model downloaded successfully!")
+    
+    # Load the model
+    model = tf.keras.models.load_model(model_path)
     return model
 
 
@@ -81,7 +103,6 @@ if st.button("Predict"):
                 disease = str(labels[prediction]).title()
                 st.metric("Prediction", disease, delta_color="off")
                 st.metric("Confidence", f"{score:.2f}%", delta_color="off")
-                # st.info(f"The model predicts that the lesion is a **{prediction}** with a confidence of {score}%")
 
         st.warning(
             "This is not a medical diagnosis. Please consult a doctor for a professional diagnosis.",
