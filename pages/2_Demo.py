@@ -25,44 +25,24 @@ def standardize_reduction_wrapper(fn):
 
 @st.cache_resource
 def load_model():
-    # Use absolute path for better reliability
     model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "model", "model.h5")
     
-    # Check if model exists, if not download it
     if not os.path.exists(model_path):
         try:
             st.info("Model file not found. Downloading model...")
             os.makedirs(os.path.dirname(model_path), exist_ok=True)
             
-            # Google Drive link for the model
-            drive_link = "https://drive.google.com/file/d/1d_zmXyypxBe7h5rh07IXgjxgpwMRzeyu/view?usp=sharing"
-            file_id = extract_file_id(drive_link)
+            from huggingface_hub import hf_hub_download
             
-            if not file_id:
-                st.error("Invalid Google Drive link. Please check the URL.")
-                st.stop()
+            # Download from Hugging Face
+            with st.spinner("Downloading model from Hugging Face..."):
+                hf_hub_download(
+                    repo_id="TheXzavier/Skin-Cancer-Detection",  # This is your exact repository ID
+                    filename="model.h5",
+                    local_dir=os.path.dirname(model_path),
+                    local_dir_use_symlinks=False
+                )
             
-            # Create progress bar
-            progress_bar = st.progress(0)
-            download_file_from_google_drive(
-                file_id, 
-                model_path,
-                progress_callback=progress_bar.progress
-            )
-            progress_bar.empty()
-            
-            # Verify the file was downloaded
-            if not os.path.exists(model_path):
-                st.error("Failed to download the model file.")
-                st.stop()
-            
-            # Check file size (model should be around 168MB)
-            file_size = os.path.getsize(model_path)
-            if file_size < 100_000_000:  # Less than 100MB
-                os.remove(model_path)
-                st.error(f"Downloaded file is too small ({file_size} bytes). Expected ~168MB.")
-                st.stop()
-                
             st.success("Model downloaded successfully!")
         except Exception as e:
             if os.path.exists(model_path):
