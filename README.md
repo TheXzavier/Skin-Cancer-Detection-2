@@ -1,5 +1,18 @@
 # Skin Cancer Detection
 
+## Model Setup
+
+The model file is too large to be included in the repository. To download the model:
+
+1. Upload the model file to a cloud storage service (Google Drive, Dropbox, etc.)
+2. Update the URL in `download_model.py` with your storage link
+3. Run the download script:
+
+```python
+pip install requests tqdm
+python download_model.py
+```
+
 [Live Site](https://group-g20-skin-cancer-detection.streamlit.app/)
 
 ## Running
